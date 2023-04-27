@@ -61,14 +61,14 @@ class LoginModule{
 
     };
     sendLogout(){
-        let promise = fetch('logout',{
+        fetch('logout',{
             method: "GET",
             headers: {
                 'Content-Type': 'application/json;charset=utf-8'
             },
             credential: "include"           
-        });
-        promise.then(response => response.json())
+        })
+                .then(response => response.json())
                 .then(response =>{
                     document.getElementById('info').innerHTML=response.info;
                     if(response.status){
@@ -84,6 +84,7 @@ class LoginModule{
                     checkAuthorization();
                 });
     };
+    
     
 };
 const loginModule = new LoginModule();

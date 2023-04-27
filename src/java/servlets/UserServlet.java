@@ -5,9 +5,11 @@
  */
 package servlets;
 
+import converters.ConvertorToJson;
 import entity.User;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigDecimal;
 import javax.ejb.EJB;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -18,6 +20,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import session.UserFacade;
 import tools.PasswordEncrypt;
 
@@ -27,6 +30,7 @@ import tools.PasswordEncrypt;
  */
 @WebServlet(name = "UserServlet",loadOnStartup = 1, urlPatterns = {
     "/createUser",
+    "/changeUserProfile",
     
 })
 
@@ -106,6 +110,57 @@ public class UserServlet extends HttpServlet {
                     job.add("status", true);
                 } catch (Exception e) {
                     job.add("info", "Пользователя создать не удолось");
+                    job.add("status", false);
+                }
+                try (PrintWriter out = response.getWriter()) {
+                    out.println(job.build().toString());
+                }
+                break;
+            case "/changeUserProfile":
+                jsonReader = Json.createReader(request.getReader());
+                jsonObject = jsonReader.readObject();
+                job = Json.createObjectBuilder();
+                String userId = jsonObject.getString("userId");
+                firstname = jsonObject.getString("firstname");
+                lastname = jsonObject.getString("lastname");
+                phone = jsonObject.getString("phone");
+                login = jsonObject.getString("login");
+                password = jsonObject.getString("password");
+                if(firstname == null || firstname.isEmpty() 
+                        || lastname == null || lastname.isEmpty() 
+                        || phone == null || phone.isEmpty()
+                        || login == null || login.isEmpty()
+                        || userId == null || userId.isEmpty()){
+                    job.add("info", "Не все поля заполнены");
+                    job.add("status", false);
+                    try (PrintWriter out = response.getWriter()) {
+                        out.println(job.build().toString());
+                    }
+                    break;
+                }
+                // Находим по идентификатору пользователя в базе и инициируем новыми значениями
+                user = userFacade.find(Long.parseLong(userId));
+                user.setFirstname(firstname);
+                user.setLastname(lastname);
+                user.setPhone(phone);
+                user.setLogin(login);
+                if(password != null && !password.isEmpty()){
+                    //если пароль заполнен, то меняем на указанный
+                    password = pe.getProtectedPassword(password, user.getSalt());
+                    user.setPassword(password);
+                }
+                try {
+                    userFacade.edit(user);
+                    //Состояние пользователя изменилось -> запоминаем его в сессии
+                    HttpSession session = request.getSession(false);
+                    if(session.getAttribute("authUser")!= null ){
+                        session.setAttribute("authUser", user);
+                    }
+                    job.add("info", "Профиль пользователя успешно изменнен");
+                    job.add("user", new ConvertorToJson().getJsonObjectUser(user));
+                    job.add("status", true);
+                } catch (Exception e) {
+                    job.add("info", "Профиль пользователя изменить не удолось");
                     job.add("status", false);
                 }
                 try (PrintWriter out = response.getWriter()) {
