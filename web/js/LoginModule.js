@@ -54,7 +54,7 @@ class LoginModule{
                     checkAuthorization();
                 })
                 .catch(error => {
-                    document.getElementById('info').innerHTML='Авторизоваться не удалось ('+e+')';
+                    document.getElementById('info').innerHTML='Авторизоваться не удалось ('+error+')';
                     checkAuthorization();
                 });
 

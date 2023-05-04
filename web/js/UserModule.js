@@ -167,8 +167,59 @@ class UserModule{
                         document.getElementById('info').innerHTML=response.info;
                     }
                 })
-                .catch(error => document.getElementById('info').innerHTML='Профиль пользователя изменить не удалось ('+e+')');
+                .catch(error => document.getElementById('info').innerHTML='Профиль пользователя изменить не удалось ('+error+')');
 
+    }
+    printListUsers(){
+        fetch('getListUsers',{
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            credential: "include"
+        })
+        .then(response=>response.json())
+        .then(response=>{
+            if(!response.status){
+                document.getElementById('info').innerHTML=response.info;
+                return;
+            }
+            document.getElementById('content').innerHTML=
+                `<h3 class="w-100 d-flex justify-content-center mt-5">Список пользователей</h3>
+                   <div class="w-100 p-3 d-flex justify-content-center">
+                        <div class="card m-2 border-0" style="width: 45rem;">
+                            <div class="card-body">
+                                <div class="container text-center">
+                                    <table class="table" id="table">
+                                        <thead>
+                                        <tr><th scope="col">№</th><th scope="col" class="text-start">Пользователь</th></tr>
+                                        </thead>
+
+                                    </table>
+                                </div>
+                            </div>
+                         </div>
+                   </div>`;
+            let table = document.getElementById('table');
+            let tbody = document.createElement("tbody");
+            for (let i = 0; i < response.users.length; i++) {
+                let user = response.users[i];
+                let row = document.createElement("tr");
+                let cell1 = document.createElement("td");
+                cell1.textContent = i+1;
+                let cell2 = document.createElement("td");
+                cell2.setAttribute("class","text-start");
+                cell2.textContent = `${user.firstname} ${user.lastname} (${user.login})`;
+                row.appendChild(cell1);
+                row.appendChild(cell2);
+                tbody.appendChild(row);
+                
+            }
+            table.appendChild(tbody);
+        })
+        .catch(error=>{
+            console.log(error)
+        });
     }
 };
 const userModule = new UserModule();

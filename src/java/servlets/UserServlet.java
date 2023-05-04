@@ -9,7 +9,7 @@ import converters.ConvertorToJson;
 import entity.User;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
+import java.util.List;
 import javax.ejb.EJB;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -31,6 +31,7 @@ import tools.PasswordEncrypt;
 @WebServlet(name = "UserServlet",loadOnStartup = 1, urlPatterns = {
     "/createUser",
     "/changeUserProfile",
+    "/getListUsers",
     
 })
 
@@ -163,6 +164,15 @@ public class UserServlet extends HttpServlet {
                     job.add("info", "Профиль пользователя изменить не удолось");
                     job.add("status", false);
                 }
+                try (PrintWriter out = response.getWriter()) {
+                    out.println(job.build().toString());
+                }
+                break;
+            case "/getListUsers":
+                List<User> listUsers = userFacade.findAll();
+                job = Json.createObjectBuilder();
+                job.add("status", true);
+                job.add("users", new ConvertorToJson().getJsonArrayUsers(listUsers));
                 try (PrintWriter out = response.getWriter()) {
                     out.println(job.build().toString());
                 }
