@@ -1,5 +1,6 @@
 import {userModule} from './UserModule.js';
 import {loginModule} from './LoginModule.js';
+import {adminModule} from './AdminModule.js';
 
 export {checkAuthorization};
 
@@ -32,6 +33,11 @@ let addBook = document.getElementById('addBook');
 addBook.addEventListener('click',e=>{
     e.preventDefault();
     bookModule.printFormAddBook();
+});
+let changeRole = document.getElementById('changeRole');
+changeRole.addEventListener('click',e=>{
+    e.preventDefault();
+    adminModule.printFormChangeRole();
 });
 
 

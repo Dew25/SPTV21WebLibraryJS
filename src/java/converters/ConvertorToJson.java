@@ -31,6 +31,7 @@ public class ConvertorToJson {
         }
         return jab.build();
     }
+   
     public JsonArray getJsonArrayUsers(List<User>listUsers){
         JsonArrayBuilder jab = Json.createArrayBuilder();
         for (int i = 0; i < listUsers.size(); i++) {
