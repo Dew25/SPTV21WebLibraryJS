@@ -5,6 +5,7 @@
  */
 package servlets;
 
+import converters.ConvertorJsonToJava;
 import converters.ConvertorToJson;
 import entity.User;
 import java.io.IOException;
@@ -37,7 +38,7 @@ import tools.PasswordEncrypt;
 
 public class UserServlet extends HttpServlet {
     @EJB private UserFacade userFacade; 
-    static enum role {ADMINISTRATOR, MANAGER, USER};
+    public static enum role {ADMINISTRATOR, MANAGER, USER};
     private PasswordEncrypt pe = new PasswordEncrypt();
 
     @Override
@@ -79,16 +80,8 @@ public class UserServlet extends HttpServlet {
                 JsonReader jsonReader = Json.createReader(request.getReader());
                 JsonObject jsonObject = jsonReader.readObject();
                 JsonObjectBuilder job = Json.createObjectBuilder();
-                String firstname = jsonObject.getString("firstname");
-                String lastname = jsonObject.getString("lastname");
-                String phone = jsonObject.getString("phone");
-                String login = jsonObject.getString("login");
-                String password = jsonObject.getString("password");
-                if(firstname == null || firstname.isEmpty() 
-                        || lastname == null || lastname.isEmpty() 
-                        || phone == null || phone.isEmpty()
-                        || login == null || login.isEmpty()
-                        || password == null || password.isEmpty()){
+                User user = new ConvertorJsonToJava().getUser(jsonObject);
+                if(user == null){
                     job.add("info", "Не все поля заполнены");
                     job.add("status", false);
                     try (PrintWriter out = response.getWriter()) {
@@ -96,15 +89,6 @@ public class UserServlet extends HttpServlet {
                     }
                     break;
                 }
-                User user = new User();
-                user.setFirstname(firstname);
-                user.setLastname(lastname);
-                user.setPhone(phone);
-                user.setLogin(login);
-                user.setSalt(pe.getSalt());
-                password = pe.getProtectedPassword(password, user.getSalt());
-                user.setPassword(password);
-                user.getRoles().add(UserServlet.role.USER.toString());
                 try {
                     userFacade.create(user);
                     job.add("info", "Пользователь успешно создан");
@@ -121,34 +105,14 @@ public class UserServlet extends HttpServlet {
                 jsonReader = Json.createReader(request.getReader());
                 jsonObject = jsonReader.readObject();
                 job = Json.createObjectBuilder();
-                String userId = jsonObject.getString("userId");
-                firstname = jsonObject.getString("firstname");
-                lastname = jsonObject.getString("lastname");
-                phone = jsonObject.getString("phone");
-                login = jsonObject.getString("login");
-                password = jsonObject.getString("password");
-                if(firstname == null || firstname.isEmpty() 
-                        || lastname == null || lastname.isEmpty() 
-                        || phone == null || phone.isEmpty()
-                        || login == null || login.isEmpty()
-                        || userId == null || userId.isEmpty()){
+                user = new ConvertorJsonToJava().getUser(jsonObject, userFacade);
+                if(user == null){
                     job.add("info", "Не все поля заполнены");
                     job.add("status", false);
                     try (PrintWriter out = response.getWriter()) {
                         out.println(job.build().toString());
                     }
                     break;
-                }
-                // Находим по идентификатору пользователя в базе и инициируем новыми значениями
-                user = userFacade.find(Long.parseLong(userId));
-                user.setFirstname(firstname);
-                user.setLastname(lastname);
-                user.setPhone(phone);
-                user.setLogin(login);
-                if(password != null && !password.isEmpty()){
-                    //если пароль заполнен, то меняем на указанный
-                    password = pe.getProtectedPassword(password, user.getSalt());
-                    user.setPassword(password);
                 }
                 try {
                     userFacade.edit(user);
