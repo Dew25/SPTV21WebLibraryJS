@@ -2,12 +2,22 @@
 
 package converters;
 
+import entity.Author;
+import entity.Book;
 import entity.User;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 import javax.json.Json;
+import javax.json.JsonArray;
+import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonString;
+import javax.json.JsonValue;
 import servlets.UserServlet;
+import session.AuthorFacade;
+import session.BookFacade;
 import session.UserFacade;
 import tools.PasswordEncrypt;
 
@@ -66,6 +76,56 @@ public class ConvertorJsonToJava {
             user.setPassword(password);
         }
         return user;
+    }
+
+    public Author getAuthor(JsonObject jsonObject, BookFacade bookFacade) {
+        
+        String firstname = jsonObject.getString("firstname");
+        String lastname = jsonObject.getString("lastname");
+        String birthYear = jsonObject.getString("birthYear");
+        Author author = new Author();
+        author.setBirthYear(Integer.parseInt(birthYear));
+        author.setFirstname(firstname);
+        author.setLastname(lastname);
+        JsonArray jsonArrayBooksId = null;
+        try {
+            jsonArrayBooksId = jsonObject.getJsonArray("selectedBooks");
+        } catch (Exception e) {
+           // jsonArrayBooksId = [];
+        }
+        if(jsonArrayBooksId != null){
+            for (int i = 0; i < jsonArrayBooksId.size(); i++) {
+                 author.getBooks().add(bookFacade.find(Long.parseLong(jsonArrayBooksId.get(i).toString())));
+            }
+        }
+        return author;
+        
+    }
+
+   
+
+    public Book getBook(JsonObject jsonObject, AuthorFacade authorFacade) {
+        String bookName = jsonObject.getString("bookName","");
+        String publishedYear = jsonObject.getString("publishedYear","");
+        String quantity = jsonObject.getString("quantity","");
+        
+        Book book = new Book();
+        book.setBookName(bookName);
+        book.setPublishedYear(Integer.parseInt(publishedYear));
+        book.setQuantity(Integer.parseInt(quantity));
+        JsonArray selectedAuthors = null;
+        try {
+            selectedAuthors = jsonObject.getJsonArray("authors");
+        } catch (Exception e) {
+        }
+        if(selectedAuthors != null){
+            for (int i = 0; i < selectedAuthors.size(); i++) {
+                JsonString key = selectedAuthors.getJsonString(i);
+                String strKey = key.getString();
+                 book.getAuthors().add(authorFacade.find(Long.parseLong(strKey)));
+            }
+        }
+        return book;
     }
     
 }
