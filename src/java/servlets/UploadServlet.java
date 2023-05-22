@@ -17,7 +17,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.ejb.EJB;
 import javax.json.Json;
+import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonReader;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
@@ -33,8 +35,7 @@ import session.CoverFacade;
  * @author user
  */
 @WebServlet(name = "UploadServlet", urlPatterns = {
-    "/addCover", 
-    "/uploadCover"
+    "/createCover"
 })
 @MultipartConfig
 public class UploadServlet extends HttpServlet {
@@ -72,30 +73,35 @@ public class UploadServlet extends HttpServlet {
         String uploadFolder = "C:\\Users\\user\\UploadDir\\SPTV21WebLibraryJS";
         String path = request.getServletPath();
         switch (path) {
-            case "/uploadCover":
-                List<Part> fileParts = request.getParts().stream().filter(
-                        part -> "file".equals(part.getName()))
-                        .collect(Collectors.toList());
-                StringBuilder sb = new StringBuilder();
-                for (Part filePart : fileParts) {
-                    sb.append(uploadFolder + File.separator + getFileName(filePart));
-                    File file = new File(sb.toString());
-                    file.mkdirs();
-                    try(InputStream fileContent = filePart.getInputStream()){
-                        Files.copy(fileContent, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    }
-                    Cover cover = new Cover();
-                    cover.setDescription(request.getParameter("description"));
-                    cover.setUrl(sb.toString());
-                    coverFacade.create(cover);
+            case "/createCover":
+                String description = request.getParameter("description");
+                Part part = request.getPart("file");
+                String fileName = getFileName(part);
+                String pathToDir = "C:\\Users\\user\\UploadDir\\JPTV21WebLibrarJS";
+                File file = new File(pathToDir);
+                file.mkdirs();
+                String pathToFile = pathToDir+File.separator+fileName;
+                file = new File(pathToFile);
+                try(InputStream fileContent = part.getInputStream()){
+                    Files.copy(fileContent, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
-                job.add("info", "Обложка для книги успешно загружена");
+                Cover cover = new Cover();
+                cover.setUrl(pathToFile);
+                cover.setDescription(description);
+                job = Json.createObjectBuilder();
+                try {
+                    coverFacade.create(cover);
+                    job.add("info", "Обложка успешно добавлена");
+                } catch (Exception e) {
+                    job.add("info", "Добавить обложку не удалось");
+                    
+                }
                 try (PrintWriter out = response.getWriter()) {
                     out.println(job.build().toString());
                 }
                 break;
             
-        }   
+       }   
         
         
     }

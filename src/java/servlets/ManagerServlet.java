@@ -9,6 +9,7 @@ import converters.ConvertorJsonToJava;
 import converters.ConvertorToJson;
 import entity.Author;
 import entity.Book;
+import entity.Cover;
 import entity.User;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -34,13 +35,11 @@ import tools.PasswordEncrypt;
  *
  * @author user
  */
-@WebServlet(name = "BookServlet",loadOnStartup = 1, urlPatterns = {
-    "/createBook",
-    "/getListBooks",
-    
+@WebServlet(name = "ManagerServlet",loadOnStartup = 1, urlPatterns = {
+    "/createBook",    
+    "/getListCovers",
 })
-
-public class BookServlet extends HttpServlet {
+public class ManagerServlet extends HttpServlet {
     @EJB private AuthorFacade authorFacade; 
     @EJB private BookFacade bookFacade; 
     @EJB private CoverFacade coverFacade; 
@@ -60,12 +59,40 @@ public class BookServlet extends HttpServlet {
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         request.setCharacterEncoding("UTF-8");
+        JsonObjectBuilder job = Json.createObjectBuilder();
+        HttpSession session = request.getSession(false);
+        if(session == null){
+            job.add("info", "Вы не аторизованы.");
+            job.add("status", false);
+                try (PrintWriter out = response.getWriter()) {
+                    out.println(job.build().toString());
+                }
+                return;
+        }
+        User authUser = (User) session.getAttribute("authUser");
+        if(authUser == null){
+            job.add("info", "Вы не аторизованы.");
+            job.add("status", false);
+                try (PrintWriter out = response.getWriter()) {
+                    out.println(job.build().toString());
+                }
+                return;
+        }
+        if(!authUser.getRoles().contains(UserServlet.role.MANAGER.toString())){
+            job.add("info", "У вас нет права. Авторизуйтесь как менеджер.");
+            job.add("status", false);
+                try (PrintWriter out = response.getWriter()) {
+                    out.println(job.build().toString());
+                }
+                return;
+        }
+        
         String path = request.getServletPath();
         switch (path) {
             case "/createBook":
                 JsonReader jsonReader = Json.createReader(request.getReader());
                 JsonObject jsonObject = jsonReader.readObject();
-                JsonObjectBuilder job = Json.createObjectBuilder();
+                job = Json.createObjectBuilder();
                 Book book = new ConvertorJsonToJava().getBook(jsonObject, authorFacade,coverFacade);
                 if(book == null){
                     job.add("info", "Не все поля заполнены");
@@ -92,16 +119,15 @@ public class BookServlet extends HttpServlet {
                     out.println(job.build().toString());
                 }
                 break;
-          
-            case "/getListBooks":
-                List<Book> listBooks = bookFacade.findAll();
-                job = Json.createObjectBuilder();
+            case "/getListCovers":
+                List<Cover> listCovers = coverFacade.findAll();
+                job.add("covers", new ConvertorToJson().getJACovers(listCovers));
                 job.add("status", true);
-                job.add("books", new ConvertorToJson().getJABooks(listBooks));
                 try (PrintWriter out = response.getWriter()) {
                     out.println(job.build().toString());
                 }
                 break;
+            
         }
     }
 
