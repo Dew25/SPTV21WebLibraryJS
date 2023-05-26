@@ -8,9 +8,11 @@ package servlets;
 import converters.ConvertorJsonToJava;
 import converters.ConvertorToJson;
 import entity.Book;
+import entity.History;
 import entity.User;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.GregorianCalendar;
 import java.util.List;
 import javax.ejb.EJB;
 import javax.json.Json;
@@ -24,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import session.BookFacade;
+import session.HistoryFacade;
 import session.UserFacade;
 import tools.PasswordEncrypt;
 
@@ -35,6 +38,10 @@ import tools.PasswordEncrypt;
     
     "/changeUserProfile",
     "/getBook",
+    "/loadBook",
+    "/getListReadingBooks",
+    "/returnBook",
+    
     
     
 })
@@ -42,6 +49,7 @@ import tools.PasswordEncrypt;
 public class UserServlet extends HttpServlet {
     @EJB private UserFacade userFacade; 
     @EJB private BookFacade bookFacade; 
+    @EJB private HistoryFacade historyFacade; 
     public static enum role {ADMINISTRATOR, MANAGER, USER};
     private PasswordEncrypt pe = new PasswordEncrypt();
 
@@ -154,6 +162,62 @@ public class UserServlet extends HttpServlet {
                     out.println(job.build().toString());
                 }
                 break;
+            case "/loadBook":
+                bookId = request.getParameter("bookId");
+                try {
+                    book = bookFacade.find(Long.parseLong(bookId));
+                    if(book.getQuantity() <= 0){
+                        job.add("info", "Книги нет в наличии, все читаются");
+                        try (PrintWriter out = response.getWriter()) {
+                            out.println(job.build().toString());
+                        }
+                        break;
+                    }
+                    book.setQuantity(book.getQuantity()-1);
+                    History history = new History();
+                    history.setBook(book);
+                    history.setUser(authUser);
+                    history.setTakeOnBook(new GregorianCalendar().getTime());
+                    bookFacade.edit(book);
+                    historyFacade.create(history);
+                    job.add("info", "Книга выдана пользователю");
+                    
+                } catch (Exception e) {
+                    job.add("info", "Книгу выдать не удалось");
+                }
+                try (PrintWriter out = response.getWriter()) {
+                    out.println(job.build().toString());
+                }
+                
+                break;
+            case "/getListReadingBooks":
+                List<History> listHistoriesWidthReadingBooks = historyFacade.findReadingBooks();
+                job = Json.createObjectBuilder();
+                job.add("status", true);
+                job.add("histories", new ConvertorToJson().getJAHistories(listHistoriesWidthReadingBooks));
+                try (PrintWriter out = response.getWriter()) {
+                    out.println(job.build().toString());
+                }
+                break;
+            case "/returnBook":
+                job = Json.createObjectBuilder();
+                String historyId = request.getParameter("historyId");
+                try {
+                    History history = historyFacade.find(Long.parseLong(historyId));
+                    book = bookFacade.find(history.getBook().getId());
+                    book.setQuantity(book.getQuantity()+1);
+                    bookFacade.edit(book);
+                    history.setReturnBook(new GregorianCalendar().getTime());
+                    historyFacade.edit(history);
+                    job.add("status", true);
+                } catch (Exception e) {
+                    job.add("status", false);
+                }
+                try (PrintWriter out = response.getWriter()) {
+                    out.println(job.build().toString());
+                }
+                break;
+
         }
     }
 

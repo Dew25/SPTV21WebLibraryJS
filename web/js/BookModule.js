@@ -89,7 +89,7 @@ class BookModule{
         let btnNewAuthor = document.getElementById('btnNewBook');
         btnNewAuthor.addEventListener('click',e=>{
             e.preventDefault();
-            bookModule.creadeBook();
+            bookModule.createBook();
         });
         let linkAddCover = document.getElementById('linkAddCover');
         linkAddCover.addEventListener('click',e=>{
@@ -98,7 +98,7 @@ class BookModule{
         });
         
     }
-    creadeBook(){
+    createBook(){
         let selectedAuthors = document.getElementById('selectedAuthors');
         let authors= Array.from(selectedAuthors.selectedOptions).map(option => option.value);
         let book = {
@@ -113,7 +113,7 @@ class BookModule{
             headers: {
                 'Content-Type': 'application/json;charset=utf-8'
             },
-            credential: "include",
+            credentials: "include",
             body: JSON.stringify(book)
         })
         .then(response=>response.json())
@@ -124,31 +124,39 @@ class BookModule{
         .catch(error => document.getElementById('info').innerHTML = 'Ошибка формирования JSON: '+error)
     }
     printFormListBooks(){
-        document.getElementById('content').innerHTML =
-        ` <h3 class="w-100 d-flex justify-content-center mt-5">Список книг</h3>
-            <div id="containerBooks" class="w-100 p-3 d-flex justify-content-center">
-                
-            </div>`;
+        
         fetch('getListBooks',{
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json;charset=utf-8'
             },
-            credential: "include"
+            credentials: "include"
         }).then(response => response.json())
           .then(response=>{
+                document.getElementById('content').innerHTML =
+                    ` <h3 class="w-100 d-flex justify-content-center mt-5">Список книг</h3>
+                      <div id="containerBooks" class="w-100 p-3 d-flex justify-content-center">
+
+                      </div>`;
                 let containerBooks = document.getElementById('containerBooks');
+                if(!response.books.length > 0){
+                    let p = document.createElement('p');
+                    p.innerHTML = "Книг нет";
+                    containerBooks.appendChild(p);
+                    return;
+                }
                 for(let i=0;i< response.books.length;i++){
                     let card = document.createElement('div');
                     card.setAttribute('class','card m-2');
                     card.setAttribute('style', 'width: 13rem');
                     card.innerHTML =`
-                            <a id="book${response.books[i].id}" class="text-decoration-none" href=""> Book </a>
+                            <img src="insertFile/${response.books[i].cover.url}" width='100%' heigth='200px'/>
+                            <a id="showBook${response.books[i].id}" class="text-decoration-none" href=""> Book </a>
                             <a id="editBook${response.books[i].id}" class="editBookLink" href="#">Редактировать книгу</a>`;
                              
                     containerBooks.insertAdjacentElement('beforeend',card);
-                    let abook = document.getElementById("book"+response.books[i].id);
-                    abook.addEventListener('click',e=>{
+                    let showBook = document.getElementById("showBook"+response.books[i].id);
+                    showBook.addEventListener('click',e=>{
                         e.preventDefault();
                         bookModule.printBookForm(response.books[i].id);
                     });
@@ -180,9 +188,13 @@ class BookModule{
             headers: {
                 'Content-Type': 'application/json;charset=utf-8'
             },
-            credential: "include"
+            credentials: "include"
         }).then(response => response.json())
           .then(response=>{
+              if(!response.status){
+                  document.getElementById('info').innerHTML= response.info;
+                  return;
+              }
                 let containerBook = document.getElementById('containerBook');
                 let card = document.createElement('div');
                 card.setAttribute('class','card m-2');
@@ -196,7 +208,7 @@ class BookModule{
                 let loadBook = document.getElementById("loadBook"+response.book.id);
                 loadBook.addEventListener('click',e=>{
                     e.preventDefault();
-                    bookModule.printTextBook(response.book.id);
+                    bookModule.printFormLoadBook(response.book.id);
                 });
                 let editTextBook = document.getElementById("editTextBook"+response.books.id);
                 editTextBook.addEventListener('click',e=>{
@@ -213,6 +225,88 @@ class BookModule{
     }
     editTextBookForm(bookId){
         console.log("editTextBookForm("+bookId+");");
+    }
+    printFormLoadBook(bookId){
+        const params = {
+            "bookId": bookId
+        };
+        const queryString = new URLSearchParams(params).toString();
+        fetch('loadBook?'+queryString,{
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            credentials: "include"
+        })  .then(response => response.json())
+            .then(response=>{
+                document.getElementById('info').innerHTML=response.info;
+            })
+            .catch(error => document.getElementById('info').innerHTML="error: "+error);
+    }
+    printFormListReadingBooks(){
+        fetch('getListReadingBooks',{
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            credentials: "include"
+        }).then(response => response.json())
+          .then(response=>{
+                document.getElementById('content').innerHTML =
+                    ` <h3 class="w-100 d-flex justify-content-center mt-5">Список книг</h3>
+                      <div id="containerBooks" class="w-100 p-3 d-flex justify-content-center">
+
+                      </div>`;
+                let containerBooks = document.getElementById('containerBooks');
+                if(!response.histories.length > 0){
+                    let p = document.createElement('p');
+                    p.innerHTML = "Читаемых книг нет";
+                    containerBooks.appendChild(p);
+                    return;
+                }
+                for(let i=0;i< response.histories.length;i++){
+                    let card = document.createElement('div');
+                    card.setAttribute('class','card m-2');
+                    card.setAttribute('style', 'width: 13rem');
+                    card.innerHTML =`
+                            <img src="insertFile/${response.histories[i].book.cover.url}" width='100%' heigth='200px'/>
+                            <a id="returnBook${response.histories[i].id}" class="text-decoration-none" href=""> Вернуть книгу</a>
+                            `;
+                             
+                    containerBooks.insertAdjacentElement('beforeend',card);
+                    let returnBook = document.getElementById("returnBook"+response.histories[i].id);
+                    returnBook.addEventListener('click',e=>{
+                        e.preventDefault();
+                        bookModule.returnBook(response.histories[i].id);
+                    });
+                }
+            })
+          .catch(error => document.getElementById('info').innerHTML="error: "+error);
+        
+        
+    }
+    returnBook(historyId){
+         const params = {
+            "historyId": historyId
+        };
+        const queryString = new URLSearchParams(params).toString();
+        fetch('returnBook?'+queryString,{
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8'
+            },
+            credentials: "include"
+        })  .then(response => response.json())
+            .then(response=>{
+                if(response.status){
+                    document.getElementById('info').innerHTML="Книга возвращена";
+                    
+                }else{
+                    document.getElementById('info').innerHTML="Книгу возвратить не удалось";
+                }
+                bookModule.printFormListReadingBooks();
+            })
+            .catch(error => document.getElementById('info').innerHTML="error: "+error);
     }
 }
 const bookModule = new BookModule();

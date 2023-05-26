@@ -51,6 +51,11 @@ listBooks.addEventListener('click',e=>{
     e.preventDefault();
     bookModule.printFormListBooks();
 });
+let returnBook = document.getElementById('returnBook');
+returnBook.addEventListener('click',e=>{
+    e.preventDefault();
+    bookModule.printFormListReadingBooks();
+});
 
 
 function checkAuthorization(){
@@ -69,7 +74,6 @@ function checkAuthorization(){
         userProfile.hidden = true;
         listUsers.hidden=true;
         addBook.hidden=true;
-        document.getElementById('takeOnBook').hidden=true;
         document.getElementById('returnBook').hidden=true;
         document.getElementById('addAuthor').hidden=true;
         document.getElementById('liAdministrator').hidden=true;
@@ -92,7 +96,6 @@ function checkAuthorization(){
         document.getElementById('userLogin').hidden = false;
         document.getElementById('userLogin').innerHTML = 'Вы вошли как '+authUser.login;
         userProfile.hidden=false;
-        document.getElementById('takeOnBook').hidden=false;
         document.getElementById('returnBook').hidden=false;
         document.getElementById('listAuthors').hidden=false;
         //hidden

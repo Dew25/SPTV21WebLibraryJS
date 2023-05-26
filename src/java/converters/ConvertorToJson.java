@@ -5,6 +5,7 @@ package converters;
 import entity.Author;
 import entity.Book;
 import entity.Cover;
+import entity.History;
 import entity.User;
 import java.util.List;
 import javax.json.Json;
@@ -12,6 +13,7 @@ import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonValue;
 
 
 public class ConvertorToJson {
@@ -100,6 +102,7 @@ public class ConvertorToJson {
             jobBook.add("bookName", book.getBookName());
             jobBook.add("PublishedYear", book.getPublishedYear());
             jobBook.add("quantity", book.getQuantity());
+            jobBook.add("cover", getJOCover(book.getCover()));
             jobBook.add("authors", getJAAuthorsWithoutBooks(book.getAuthors()));
             jabBooks.add(jobBook.build());
         }
@@ -131,5 +134,26 @@ public class ConvertorToJson {
             jabCovers.add(getJOCover(listCovers.get(i)));
         }
         return jabCovers.build();
+    }
+
+    public JsonArray getJAHistories(List<History> listHistoriesWidthReadingBooks) {
+        JsonArrayBuilder jabHistories = Json.createArrayBuilder();
+        for(int i = 0; i<listHistoriesWidthReadingBooks.size();i++){
+            jabHistories.add(getJOHistory(listHistoriesWidthReadingBooks.get(i)));
+        }
+        return jabHistories.build();
+    }
+    public JsonObject getJOHistory(History history){
+        JsonObjectBuilder jobHistory = Json.createObjectBuilder();
+        jobHistory.add("id", history.getId());
+        jobHistory.add("book", getJOBook(history.getBook()));
+        jobHistory.add("user", getJsonObjectUser(history.getUser()));
+        jobHistory.add("takeOnBook",history.getTakeOnBook().toString());
+        if(history.getReturnBook()==null){
+            jobHistory.add("returnBook","");
+        }else{
+            jobHistory.add("returnBook", history.getReturnBook().toString());
+        }
+        return jobHistory.build();
     }
 }
